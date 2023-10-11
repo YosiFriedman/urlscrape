@@ -1,0 +1,48 @@
+[
+  {
+    "url": "https://techcrunch.com/category/artificial-intelligence/",
+    "articleSelector": ".post-block",
+    "titleSelector": ".post-block__title__link",
+    "descriptionSelector": ".post-block__content",
+    "imageSelector": "img",
+    "linkSelector": ".post-block__title__link",
+    "tags": ".post-block__header .article__primary-category__link a",
+    "source": "https://techcrunch.com"
+  },
+  {
+    "url": "https://www.freecodecamp.org/news/tag/",
+    "params":["javascript","tech","technology","programming","web-development","react","python","startup","software-development","css"],
+    "articleSelector": ".post-card",
+    "titleSelector": "h2",
+    "descriptionSelector": "div.description",
+    "imageSelector": ".post-card-image-link img",
+    "linkSelector": "a.post-card-image-link",
+    "tags": ".post-card-tags",
+    "source": "https://www.freecodecamp.org"
+  },
+
+  {
+    "url": "https://www.geeksforgeeks.org/category/web-technologies/",
+    "params":["?type=popular","?type=recent","javascript","reactjs","css","html","nodejs"],
+    "articleSelector": ".article_container2",
+    "titleSelector": ".article_subheading",
+    "descriptionSelector": ".article_content_with_image",
+    "imageSelector": ".article_image img",
+    "linkSelector": ".article_image a",
+    "tags": ".article_tag",
+    "source": "https://www.geeksforgeeks.org"
+  },
+
+  {
+    "url": "https://dev.to/t/",
+    "params":["javascript","react","css","html","node-js","webdev","beginners","programming","python","node","css","typescript","news","ai"],
+    "articleSelector": ".crayons-story",
+    "titleSelector": ".crayons-story__title",
+    "descriptionSelector": ".article_content_with_image",
+    "imageSelector": ".article_image img",
+    "linkSelector": ".crayons-story__title a",
+    "tags": ".crayons-story__tags",
+    "source": "https://dev.to"
+  }
+  ]
+  
