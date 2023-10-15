@@ -4,7 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "ts-node multipleUrls.ts"
+  },
+  "compilerOptions": {
+    "target": "ES2018",
+    "module": "commonjs",
+    "strict": true
   },
   "keywords": [],
   "author": "",
@@ -14,6 +20,7 @@
     "cheerio": "^1.0.0-rc.12"
   },
   "devDependencies": {
-    "@types/node": "^20.4.5"
+    "@types/node": "^20.4.5",
+    "ts-node": "^10.9.1"
   }
 }

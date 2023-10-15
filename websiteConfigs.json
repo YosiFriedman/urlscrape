@@ -11,7 +11,18 @@
   },
   {
     "url": "https://www.freecodecamp.org/news/tag/",
-    "params":["javascript","tech","technology","programming","web-development","react","python","startup","software-development","css"],
+    "params": [
+      "javascript",
+      "tech",
+      "technology",
+      "programming",
+      "web-development",
+      "react",
+      "python",
+      "startup",
+      "software-development",
+      "css"
+    ],
     "articleSelector": ".post-card",
     "titleSelector": "h2",
     "descriptionSelector": "div.description",
@@ -23,7 +34,15 @@
 
   {
     "url": "https://www.geeksforgeeks.org/category/web-technologies/",
-    "params":["?type=popular","?type=recent","javascript","reactjs","css","html","nodejs"],
+    "params": [
+      "?type=popular",
+      "?type=recent",
+      "javascript",
+      "reactjs",
+      "css",
+      "html",
+      "nodejs"
+    ],
     "articleSelector": ".article_container2",
     "titleSelector": ".article_subheading",
     "descriptionSelector": ".article_content_with_image",
@@ -35,7 +54,22 @@
 
   {
     "url": "https://dev.to/t/",
-    "params":["javascript","react","css","html","node-js","webdev","beginners","programming","python","node","css","typescript","news","ai"],
+    "params": [
+      "javascript",
+      "react",
+      "css",
+      "html",
+      "node-js",
+      "webdev",
+      "beginners",
+      "programming",
+      "python",
+      "node",
+      "css",
+      "typescript",
+      "news",
+      "ai"
+    ],
     "articleSelector": ".crayons-story",
     "titleSelector": ".crayons-story__title",
     "descriptionSelector": ".article_content_with_image",
@@ -43,6 +77,27 @@
     "linkSelector": ".crayons-story__title a",
     "tags": ".crayons-story__tags",
     "source": "https://dev.to"
+  },
+  {
+    "url": "https://stackoverflow.blog/",
+    "params": ["productivity","career-advice","ai","open-source"],
+    "articleSelector": "article",
+    "titleSelector": ".fs-headline1",
+    "descriptionSelector": ".fs-body2",
+    "imageSelector": "img",
+    "linkSelector": "a",
+    "tags": ".ff-row-wrap a",
+    "source": "https://stackoverflow.blog"
+  },
+
+  {
+    "url": "https://stackoverflow.blog/podcast",
+    "articleSelector": "article",
+    "titleSelector": ".fs-headline1",
+    "descriptionSelector": ".fs-body2",
+    "imageSelector": "img",
+    "linkSelector": "a",
+    "tags": ".ff-row-wrap a",
+    "source": "https://stackoverflow.blog"
   }
-  ]
-  
+]
