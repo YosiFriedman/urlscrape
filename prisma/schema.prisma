@@ -147,10 +147,10 @@ model Favorite {
 
 model Article {
   id          Int      @id @default(autoincrement())
-  title       String
+  title       String   @unique
   description String?
   imageUrl    String?
-  link        String 
+  link        String
   source      String
   tags        String[]
 }

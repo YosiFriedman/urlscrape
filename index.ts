@@ -1,7 +1,7 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
 import fs from 'fs/promises';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 interface WebsiteConfig {
@@ -104,7 +104,7 @@ async function scrapeUrls(): Promise<Article[]> {
       }
     }
   }
-  const uniqueArticles = Array.from(new Map(allArticles.map((article) => [article.title, article])).values());
+  const uniqueArticles = Array.from(new Map(allArticles.map((article) => [article.title + article.link, article])).values());
   return uniqueArticles;
 }
 
@@ -124,10 +124,8 @@ async function scrapeUrls(): Promise<Article[]> {
 // }
 
 async function saveToDatabase() {
-    const extractedArticles = await scrapeUrls();
-
-
-  try{
+  const extractedArticles = await scrapeUrls();
+  try {
     for (const item of extractedArticles) {
       await prisma.article.create({
         data: {
@@ -136,14 +134,19 @@ async function saveToDatabase() {
           imageUrl: item.imageUrl,
           link: item.link,
           source: item.source,
-          tags:  item.tags,
+          tags: item.tags,
         },
       });
     }
-  } catch (err) {
-    console.log(err)
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        console.error('Unique constraint violation:', error);
+      } else {
+        console.log(error)
+      }
+    }
   }
-
 }
 
 saveToDatabase()
