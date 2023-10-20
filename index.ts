@@ -1,54 +1,124 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
-const fs = require('fs');
+import axios from 'axios';
+import cheerio from 'cheerio';
+import fs from 'fs/promises';
 
-const url = 'https://techcrunch.com/category/artificial-intelligence/';
+interface WebsiteConfig {
+  url: string;
+  articleSelector: string;
+  titleSelector: string;
+  descriptionSelector: string;
+  imageSelector: string;
+  linkSelector: string;
+  tags: string;
+  source: string;
+  params?: string[]; // Optional parameters for the URL
+}
 
-async function fetchData() {
+interface Article {
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  link: string;
+  source: string;
+  tags?: string[];
+}
+
+async function readWebsiteConfigs(): Promise<WebsiteConfig[]> {
+  try {
+    const data = await fs.readFile('websiteConfigs.json', 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading websiteConfigs.json:', error);
+    return [];
+  }
+}
+
+async function fetchData(url: string): Promise<string | null> {
   try {
     const response = await axios.get(url);
     return response.data;
   } catch (error) {
-    console.log('Error fetching data:', error);
+    console.log(`Error fetching data for ${url}:`, error);
+    return null;
   }
 }
 
-function parseHTML(html) {
+function parseHTML(html: string, config: WebsiteConfig): Article[] {
   const $ = cheerio.load(html);
 
-  const articles = [];
-  $('.post-block').each((index, element) => {
-    const title = $(element).find('.post-block__title__link').text().trim();
-    const description = $(element).find('.post-block__content').text().trim();
-    const imageUrl = $(element).find('img').attr('src');
-    const link = $(element).find('.post-block__title__link').attr('href');
+  let articles: Article[] = [];
+  $(config.articleSelector).each((index, element) => {
+    const title = $(element).find(config.titleSelector).text().trim();
+    const description = $(element).find(config.descriptionSelector).text().trim();
+    const imageUrl = $(element).find(config.imageSelector).attr('src');
+    const link = $(element).find(config.linkSelector).attr('href');
+    const tagsBlock = $(element).find(config.tags);
+    const source = config.source;
+    const tags = tagsBlock
+      .map(function () {
+        return $(this).text().trim();
+      })
+      .get()
+      .join(' ,')
+      .split(' ,');
 
     articles.push({
       title,
       description,
       imageUrl,
-      link,
+      link: link ?? '',
+      source,
+      tags
     });
   });
 
   return articles;
 }
 
+async function scrapeUrls(): Promise<Article[]> {
+  const allArticles: Article[] = [];
+  const urlConfigs = await readWebsiteConfigs();
+
+  for (const config of urlConfigs) {
+    if (config.params) {
+      const paramsArray = config.params;
+      const promises = paramsArray.map(async (param) => {
+        const htmlData = await fetchData(config.url + param);
+        if (htmlData) {
+          const extractedArticles = parseHTML(htmlData, config);
+          return extractedArticles;
+        }
+        return [];
+      });
+
+      const extractedArticlesArray = await Promise.all(promises);
+      const extractedArticles = extractedArticlesArray.flat();
+      allArticles.push(...extractedArticles);
+    } else {
+      const htmlData = await fetchData(config.url);
+      if (htmlData) {
+        const extractedArticles = parseHTML(htmlData, config);
+        allArticles.push(...extractedArticles);
+      }
+    }
+  }
+
+  return allArticles;
+}
+
 async function main() {
-  const htmlData = await fetchData();
-  const extractedArticles = parseHTML(htmlData);
+  const extractedArticles = await scrapeUrls();
 
   // Convert articles array to JSON
   const jsonData = JSON.stringify(extractedArticles, null, 2);
 
   // Write the JSON data to a file
-  fs.writeFile('techcrunch_articles.json', jsonData, (err) => {
-    if (err) {
-      console.log('Error writing to file:', err);
-    } else {
-      console.log('Articles saved to techcrunch_articles.json');
-    }
-  });
+  try {
+    await fs.writeFile('articles_data.json', jsonData);
+    console.log('Articles saved to articles_data.json');
+  } catch (err) {
+    console.log('Error writing to file:', err);
+  }
 }
 
 main();

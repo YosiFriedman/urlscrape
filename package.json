@@ -8,9 +8,7 @@
     "start": "ts-node multipleUrls.ts"
   },
   "compilerOptions": {
-    "target": "ES2018",
-    "module": "commonjs",
-    "strict": true
+    "esModuleInterop": true
   },
   "keywords": [],
   "author": "",
