@@ -150,7 +150,7 @@ model Article {
   title       String
   description String?
   imageUrl    String?
-  link        String   @unique
+  link        String 
   source      String
   tags        String[]
 }
