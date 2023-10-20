@@ -108,45 +108,50 @@ async function scrapeUrls(): Promise<Article[]> {
   return allArticles;
 }
 
-// async function main() {
-//   const extractedArticles = await scrapeUrls();
-
-//   // Convert articles array to JSON
-//   const jsonData = JSON.stringify(extractedArticles, null, 2);
-
-//   // Write the JSON data to a file
-//   try {
-//     await fs.writeFile('articles_data.json', jsonData);
-//     console.log('Articles saved to articles_data.json');
-//   } catch (err) {
-//     console.log('Error writing to file:', err);
-//   }
-// }
-
-async function saveToDatabase() {
-    const extractedArticles = await scrapeUrls();
+async function main() {
+  const extractedArticles = await scrapeUrls();
 
   // Convert articles array to JSON
   const jsonData = JSON.stringify(extractedArticles, null, 2);
-  for (const item of jsonData) {
-    await prisma.article.create({
-      data: {
-        title: item.title,
-        description: item.description,
-        imageUrl: item.imageUrl,
-        link: item.link,
-        source: item.source,
-        tags: { set: item.tags },
-      },
-    });
+
+  // Write the JSON data to a file
+  try {
+    await fs.writeFile('articles_data.json', jsonData);
+    console.log('Articles saved to articles_data.json');
+  } catch (err) {
+    console.log('Error writing to file:', err);
   }
 }
 
-saveToDatabase()
-  .then(() => {
-    console.log('Data saved to the database.');
-  })
-  .catch((error) => {
-    console.error('Error saving data to the database:', error);
-  });
-// main();
+// async function saveToDatabase() {
+//     const extractedArticles = await scrapeUrls();
+
+//   // Convert articles array to JSON
+//   // const jsonData = JSON.stringify(extractedArticles, null, 2);
+//   try{
+//     for (const item of extractedArticles) {
+//       await prisma.article.create({
+//         data: {
+//           title: item.title,
+//           description: item.description,
+//           imageUrl: item.imageUrl,
+//           link: item.link,
+//           source: item.source,
+//           tags:  item.tags,
+//         },
+//       });
+//     }
+//   } catch (err) {
+//     console.log(err)
+//   }
+
+// }
+
+// saveToDatabase()
+//   .then(() => {
+//     console.log('Data saved to the database.');
+//   })
+//   .catch((error) => {
+//     console.error('Error saving data to the database:', error);
+//   });
+main();
