@@ -14,6 +14,7 @@ interface WebsiteConfig {
   tags: string;
   source: string;
   params?: string[];
+  categorySelector?: string;
 }
 
 interface Article {
@@ -23,6 +24,7 @@ interface Article {
   link: string;
   source: string;
   tags?: string[];
+  category?: string;
 }
 
 async function readWebsiteConfigs(): Promise<WebsiteConfig[]> {
@@ -45,7 +47,7 @@ async function fetchData(url: string): Promise<string | null> {
   }
 }
 
-function parseHTML(html: string, config: WebsiteConfig): Article[] {
+function parseHTML(html: string, config: WebsiteConfig, param?: string): Article[] {
   const $ = cheerio.load(html);
 
   let articles: Article[] = [];
@@ -64,13 +66,21 @@ function parseHTML(html: string, config: WebsiteConfig): Article[] {
       .join(' ,')
       .split(' ,');
 
+      let category = 'Software Development';
+      if (config.params && param) {
+        category = param;
+      }
+
+
+
     articles.push({
       title,
       description,
       imageUrl,
       link: link ?? '',
       source,
-      tags
+      tags,
+      category,
     });
   });
 
@@ -87,7 +97,7 @@ async function scrapeUrls(): Promise<Article[]> {
       const promises = paramsArray.map(async (param) => {
         const htmlData = await fetchData(config.url + param);
         if (htmlData) {
-          const extractedArticles = parseHTML(htmlData, config);
+          const extractedArticles = parseHTML(htmlData, config, param);
           return extractedArticles;
         }
         return [];
@@ -113,7 +123,7 @@ async function saveToDatabase() {
   const extractedArticles = await scrapeUrls();
   try {
     for (const item of extractedArticles) {
-      await prisma.article.create({
+      await prisma.news.create({
         data: {
           title: item.title,
           description: item.description,
@@ -121,6 +131,7 @@ async function saveToDatabase() {
           link: item.link,
           source: item.source,
           tags: item.tags,
+          category: item.category ?? '',
         },
       });
     }
