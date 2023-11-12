@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
+
 interface WebsiteConfig {
   url: string;
   articleSelector: string;
@@ -66,12 +67,10 @@ function parseHTML(html: string, config: WebsiteConfig, param?: string): Article
       .join(' ,')
       .split(' ,');
 
-      let category = 'Software Development';
-      if (config.params && param) {
-        category = param;
-      }
-
-
+    let category = 'Software Development';
+    if (config.params && param) {
+      category = param;
+    }
 
     articles.push({
       title,
@@ -87,7 +86,17 @@ function parseHTML(html: string, config: WebsiteConfig, param?: string): Article
   return articles;
 }
 
-async function scrapeUrls(): Promise<Article[]> {
+async function scrapeUrlsForConfig(config: WebsiteConfig, param?: string): Promise<Article[]> {
+  const htmlData = param ? await fetchData(config.url + param) : await fetchData(config.url);
+
+  if (htmlData) {
+    return parseHTML(htmlData, config, param);
+  }
+
+  return [];
+}
+
+async function scrapeAllUrls(): Promise<Article[]> {
   const allArticles: Article[] = [];
   const urlConfigs = await readWebsiteConfigs();
 
@@ -95,56 +104,63 @@ async function scrapeUrls(): Promise<Article[]> {
     if (config.params) {
       const paramsArray = config.params;
       const promises = paramsArray.map(async (param) => {
-        const htmlData = await fetchData(config.url + param);
-        if (htmlData) {
-          const extractedArticles = parseHTML(htmlData, config, param);
-          return extractedArticles;
-        }
-        return [];
+        return await scrapeUrlsForConfig(config, param);
       });
 
       const extractedArticlesArray = await Promise.all(promises);
       const extractedArticles = extractedArticlesArray.flat();
       allArticles.push(...extractedArticles);
     } else {
-      const htmlData = await fetchData(config.url);
-      if (htmlData) {
-        const extractedArticles = parseHTML(htmlData, config);
-        allArticles.push(...extractedArticles);
-      }
+      const extractedArticles = await scrapeUrlsForConfig(config);
+      allArticles.push(...extractedArticles);
     }
   }
+
   const uniqueArticles = Array.from(new Map(allArticles.map((article) => [article.title + article.link, article])).values());
   return uniqueArticles;
 }
 
-
 async function saveToDatabase() {
-  const extractedArticles = await scrapeUrls();
+  const extractedArticles = await scrapeAllUrls();
+
   try {
     for (const item of extractedArticles) {
-      await prisma.news.create({
-        data: {
+      const existingArticle = await prisma.news.findFirst({
+        where: {
           title: item.title,
-          description: item.description,
-          imageUrl: item.imageUrl,
           link: item.link,
-          source: item.source,
-          tags: item.tags,
-          category: item.category ?? '',
         },
       });
+
+      if (!existingArticle) {
+        // Article does not exist, insert it into the database
+        await prisma.news.create({
+          data: {
+            title: item.title,
+            description: item.description,
+            imageUrl: item.imageUrl,
+            link: item.link,
+            source: item.source,
+            tags: item.tags,
+            category: item.category ?? '',
+          },
+        });
+      } else {
+        // Handle duplicate - you can log a message or implement specific logic
+        console.log(`Duplicate article found: ${item.title} - ${item.link}`);
+      }
     }
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2002') {
         console.error('Unique constraint violation:', error);
       } else {
-        console.log(error)
+        console.log(error);
       }
     }
   }
 }
+
 
 saveToDatabase()
   .then(() => {
@@ -154,4 +170,4 @@ saveToDatabase()
     console.error('Error saving data to the database:', error);
   });
 
-export default scrapeUrls;
+export default scrapeAllUrls;
