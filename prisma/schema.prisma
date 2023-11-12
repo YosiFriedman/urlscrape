@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+  output = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fullName String?
+  email String @unique   
+
+  favorites      Favorite[]
+  courseEnrollments CourseEnrollment[]
+  progress       Progress[]
+  // Other fields and relationships
+}
+
+model Course {
+  id                Int                @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  title             String             
+  description       String?            @db.Text
+  courseEnrollments CourseEnrollment[]
+  sections          Section[]
+  // Other fields and relationships
+}
+
+model CourseEnrollment {
+  user   User @relation(fields: [user_id], references: [id])
+  user_id Int
+  course Course @relation(fields: [course_id], references: [id])
+  course_id Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([user_id, course_id])
+}
+
+model Lesson {
+  id        Int       @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  title     String    
+  content   String?   @db.Text
+  section   Section   @relation(fields: [section_id], references: [id])
+  section_id Int
+  progress  Progress[]
+  quizzes   Quiz[]
+  // Other fields and relationships
+}
+
+model Section {
+  id          Int       @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  title       String    
+  course      Course    @relation(fields: [course_id], references: [id])
+  course_id   Int
+  lessons     Lesson[]
+  // Other fields and relationships
+}
+
+model Progress {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [user_id], references: [id])
+  user_id   Int
+  lesson    Lesson   @relation(fields: [lesson_id], references: [id])
+  lesson_id Int
+  completed Boolean
+  timestamp  DateTime?
+  // Other fields and relationships
+}
+
+model Quiz {
+  id      Int    @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lesson  Lesson @relation(fields: [lesson_id], references: [id])
+  lesson_id Int
+  questions Question[]
+  // Other fields and relationships
+}
+
+model Question {
+  id            Int    @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  text          String @db.Text
+  correctOption String 
+  quiz          Quiz   @relation(fields: [quiz_id], references: [id])
+  quiz_id       Int
+  options       Option[]
+  // Other fields and relationships
+}
+
+model Option {
+  id         Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  text       String   
+  question   Question @relation(fields: [question_id], references: [id])
+  question_id Int
+  // Other fields and relationships
+}
+
+model News {
+  id       Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  title    String   
+  link     String   @db.Text
+  description String?
+  imageUrl    String?
+  tags     String[]   
+  source   String   
+  favorites Favorite[]
+  category String
+}
+
+model Favorite {
+  id         Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User     @relation(fields: [user_id], references: [id])
+  user_id    Int
+  news       News     @relation(fields: [news_id], references: [id])
+  news_id    Int
+}

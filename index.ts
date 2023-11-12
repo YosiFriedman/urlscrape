@@ -1,6 +1,9 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
 import fs from 'fs/promises';
+import { PrismaClient, Prisma } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 interface WebsiteConfig {
   url: string;
@@ -11,7 +14,8 @@ interface WebsiteConfig {
   linkSelector: string;
   tags: string;
   source: string;
-  params?: string[]; // Optional parameters for the URL
+  params?: string[];
+  categorySelector?: string;
 }
 
 interface Article {
@@ -21,6 +25,7 @@ interface Article {
   link: string;
   source: string;
   tags?: string[];
+  category?: string;
 }
 
 async function readWebsiteConfigs(): Promise<WebsiteConfig[]> {
@@ -43,7 +48,7 @@ async function fetchData(url: string): Promise<string | null> {
   }
 }
 
-function parseHTML(html: string, config: WebsiteConfig): Article[] {
+function parseHTML(html: string, config: WebsiteConfig, param?: string): Article[] {
   const $ = cheerio.load(html);
 
   let articles: Article[] = [];
@@ -62,20 +67,36 @@ function parseHTML(html: string, config: WebsiteConfig): Article[] {
       .join(' ,')
       .split(' ,');
 
+    let category = 'Software Development';
+    if (config.params && param) {
+      category = param;
+    }
+
     articles.push({
       title,
       description,
       imageUrl,
       link: link ?? '',
       source,
-      tags
+      tags,
+      category,
     });
   });
 
   return articles;
 }
 
-async function scrapeUrls(): Promise<Article[]> {
+async function scrapeUrlsForConfig(config: WebsiteConfig, param?: string): Promise<Article[]> {
+  const htmlData = param ? await fetchData(config.url + param) : await fetchData(config.url);
+
+  if (htmlData) {
+    return parseHTML(htmlData, config, param);
+  }
+
+  return [];
+}
+
+async function scrapeAllUrls(): Promise<Article[]> {
   const allArticles: Article[] = [];
   const urlConfigs = await readWebsiteConfigs();
 
@@ -83,42 +104,70 @@ async function scrapeUrls(): Promise<Article[]> {
     if (config.params) {
       const paramsArray = config.params;
       const promises = paramsArray.map(async (param) => {
-        const htmlData = await fetchData(config.url + param);
-        if (htmlData) {
-          const extractedArticles = parseHTML(htmlData, config);
-          return extractedArticles;
-        }
-        return [];
+        return await scrapeUrlsForConfig(config, param);
       });
 
       const extractedArticlesArray = await Promise.all(promises);
       const extractedArticles = extractedArticlesArray.flat();
       allArticles.push(...extractedArticles);
     } else {
-      const htmlData = await fetchData(config.url);
-      if (htmlData) {
-        const extractedArticles = parseHTML(htmlData, config);
-        allArticles.push(...extractedArticles);
-      }
+      const extractedArticles = await scrapeUrlsForConfig(config);
+      allArticles.push(...extractedArticles);
     }
   }
 
-  return allArticles;
+  const uniqueArticles = Array.from(new Map(allArticles.map((article) => [article.title + article.link, article])).values());
+  return uniqueArticles;
 }
 
-async function main() {
-  const extractedArticles = await scrapeUrls();
+async function saveToDatabase() {
+  const extractedArticles = await scrapeAllUrls();
 
-  // Convert articles array to JSON
-  const jsonData = JSON.stringify(extractedArticles, null, 2);
-
-  // Write the JSON data to a file
   try {
-    await fs.writeFile('articles_data.json', jsonData);
-    console.log('Articles saved to articles_data.json');
-  } catch (err) {
-    console.log('Error writing to file:', err);
+    for (const item of extractedArticles) {
+      const existingArticle = await prisma.news.findFirst({
+        where: {
+          title: item.title,
+          link: item.link,
+        },
+      });
+
+      if (!existingArticle) {
+        // Article does not exist, insert it into the database
+        await prisma.news.create({
+          data: {
+            title: item.title,
+            description: item.description,
+            imageUrl: item.imageUrl,
+            link: item.link,
+            source: item.source,
+            tags: item.tags,
+            category: item.category ?? '',
+          },
+        });
+      } else {
+        // Handle duplicate - you can log a message or implement specific logic
+        console.log(`Duplicate article found: ${item.title} - ${item.link}`);
+      }
+    }
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        console.error('Unique constraint violation:', error);
+      } else {
+        console.log(error);
+      }
+    }
   }
 }
 
-main();
+
+saveToDatabase()
+  .then(() => {
+    console.log('Data saved to the database.');
+  })
+  .catch((error) => {
+    console.error('Error saving data to the database:', error);
+  });
+
+export default scrapeAllUrls;
