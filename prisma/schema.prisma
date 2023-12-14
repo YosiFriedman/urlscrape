@@ -130,6 +130,7 @@ model News {
   source   String   
   favorites Favorite[]
   category String
+  type String
 }
 
 model Favorite {
